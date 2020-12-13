@@ -21,6 +21,12 @@
 using std::string;
 using std::vector;
 
+
+/*   In this function I will 
+*  1) Initialize the array of particles std::vector<Particle> particles from a 
+*   Gaussian distribution   x,y,thetha.
+*   I wonder about id and weight?  Weigth probably will be 1 and id consecutive??
+*/
 void ParticleFilter::init(double x, double y, double theta, double std[]) {
   /**
    * TODO: Set the number of particles. Initialize all particles to 
@@ -30,10 +36,36 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
    * NOTE: Consult particle_filter.h for more information about this method 
    *   (and others in this file).
    */
+  std::default_random_engine gen;
+  double std_x, std_y, std_theta;
+  std_x = std[0];
+  std_y = std[1];
+  std_theta = std[2];
   num_particles = 0;  // TODO: Set the number of particles
 
+  std::normal_distribution<double> dist_x(x, std_x); 
+  std::normal_distribution<double> dist_y(y, std_y);
+  std::normal_distribution<double> dist_thetha(theta, std_theta);
+
+  for(int i=0; i<num_particles;i++)
+  {
+    Particle element;
+    element.id =i;
+    element.x = dist_x(gen);
+    element.y = dist_y(gen);  //Here gaussian
+    element.theta = dist_thetha(gen);  //Here gaussian
+    element.weight = 1.0;
+
+    particles.push_back(element);
+  }
+
+  is_initialized=true;
 }
 
+
+/*  The velocity and the yaw rate refers to data from the vehicle (robot)
+*  The std_pos is the same as in the init function  
+*/
 void ParticleFilter::prediction(double delta_t, double std_pos[], 
                                 double velocity, double yaw_rate) {
   /**
@@ -43,6 +75,21 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    *  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
+
+  double std_x, std_y, std_theta;
+  std_x = std_pos[0];
+  std_y = std_pos[1];
+  std_theta = std_pos[2];
+
+  for (int i=0; i<num_particles; i++){
+    //Calcualte prediction for 
+
+
+
+  }
+
+
+
 
 }
 

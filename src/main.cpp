@@ -17,9 +17,9 @@ string hasData(string s) {
   auto found_null = s.find("null");
   auto b1 = s.find_first_of("[");
   auto b2 = s.find_first_of("]");
-  if (found_null != string::npos) {
+  if (found_null != string::npos) {   // null is found out
     return "";
-  } else if (b1 != string::npos && b2 != string::npos) {
+  } else if (b1 != string::npos && b2 != string::npos) {   //both are found out
     return s.substr(b1, b2 - b1 + 1);
   }
   return "";
@@ -63,6 +63,7 @@ int main() {
         
         if (event == "telemetry") {
           // j[1] is the data JSON object
+          // if the Particle filter object is not initialized
           if (!pf.initialized()) {
             // Sense noisy position data from the simulator
             double sense_x = std::stod(j[1]["sense_x"].get<string>());
