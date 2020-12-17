@@ -41,7 +41,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   std_x = std[0];
   std_y = std[1];
   std_theta = std[2];
-  num_particles = 0;  // TODO: Set the number of particles
+  num_particles = 100;  // WATCH : MAGIC number here for the number of particles
 
   std::normal_distribution<double> dist_x(x, std_x); 
   std::normal_distribution<double> dist_y(y, std_y);
@@ -76,15 +76,47 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
    *  http://www.cplusplus.com/reference/random/default_random_engine/
    */
 
+  std::default_random_engine gen;
   double std_x, std_y, std_theta;
   std_x = std_pos[0];
   std_y = std_pos[1];
   std_theta = std_pos[2];
 
+  //Here we acknoledge the gaussian noise
+  //According to the lesson video this is the place we should add noise to velocity and yaw rate
+  //std::normal_distribution<double> dist_x(velocity, std_velocity);
+  //however we don't have these standard deviations 
+  //velocity =  
+
   for (int i=0; i<num_particles; i++){
-    //Calcualte prediction for 
+    //Calcualte prediction for particle particles[i]
+    // we have previous velocity and previous yaw rate of the vehicle
+    //also delta_t 
+    // particle position 
+    //particles[i].x;
+    //particles[i].y;
+    //particles[i].theta;
 
+    double newx = particles[i].x + (velocity/yaw_rate)*
+                                  (sin(particles[i].theta + yaw_rate* delta_t) - sin(particles[i].theta)); 
 
+    double newy = particles[i].y + (velocity/yaw_rate)*
+                                  (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate* delta_t)); 
+
+    double newtheta = particles[i].theta + yaw_rate * delta_t;
+
+    // I should apply Gaussian noise here instead
+    std::normal_distribution<double> dist_x(newx, std_x); 
+    std::normal_distribution<double> dist_y(newy, std_y);
+    std::normal_distribution<double> dist_thetha(newtheta, std_theta);
+
+    particles[i].x = dist_x(gen);
+    particles[i].y = dist_y(gen);
+    particles[i].theta = dist_thetha(gen);
+
+//    particles[i].x = newx;
+//    particles[i].y = newy;
+//    particles[i].theta = newtheta;
 
   }
 
