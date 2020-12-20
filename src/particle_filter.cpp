@@ -303,14 +303,16 @@ void ParticleFilter::resample() {
 
   //std::random_device rd;
   //std::mt19937 gen(rd());
-  for (size_t i = 0; i < 20; ++i)
-        std::cout << distr(rd) << " ";
-
+ // for (size_t i = 0; i < 20; ++i)
+  //      std::cout << distr(rd) << " ";
+  std::cout<<"New Particles: ";
   std::vector<Particle> new_particles; 
   for(int i=0;i<num_particles;i++){
     int indice = distr(rd);
+    std::cout<< indice <<" ";
     new_particles.push_back(particles[indice]);
-  }     
+  }   
+  std::cout<<std::endl;  
 
   particles = new_particles;
 /*
