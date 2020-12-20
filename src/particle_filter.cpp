@@ -119,12 +119,26 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
 //    particles[i].theta = newtheta;
 
   }
-
-
-
-
 }
 
+/**
+   * dataAssociation Finds which observations correspond to which landmarks 
+   *   (likely by using a nearest-neighbors data association).
+   * @param predicted Vector of predicted landmark observations  (in other words Miu)
+   * @param observations Vector of landmark observations  In other words X)
+   */
+/*
+   predicted is Miu
+   Observations is X
+   We need M the total number of measurements for one particle
+   sigma is the covariance of the measurement
+   sigma is in our case given by sigma_landmark which is std_landamark in the other function
+
+   predicted: The prediction measurements between one particular particle and all of the map landmarks
+              within sensor range
+   observation: The actual landmark measurements gathered from the LIDAR (the robot ones)  
+   perform Nearest Neighbor and assign  each sensor observation the map landmark ID associated with it        
+*/
 void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted, 
                                      vector<LandmarkObs>& observations) {
   /**
@@ -138,6 +152,27 @@ void ParticleFilter::dataAssociation(vector<LandmarkObs> predicted,
 
 }
 
+
+
+
+void ParticleFilter::FromObservationToMap(const ground_truth &part, 
+                         double obs_x, double obs_y, double &m_x, double &m_y){
+
+  m_x = part.x +(cos( part.theta)*obs_x)-(sin(part.theta )*obs_y);
+
+  m_y = part.y +(sin(part.theta)*obs_x) +(cos(part.theta)*obs_y);
+
+}
+
+/**
+   * updateWeights Updates the weights for each particle based on the likelihood
+   *   of the observed measurements. 
+   * @param sensor_range Range [m] of sensor
+   * @param std_landmark[] Array of dimension 2
+   *   [Landmark measurement uncertainty [x [m], y [m]]]
+   * @param observations Vector of landmark observations
+   * @param map Map class containing map landmarks
+   */
 void ParticleFilter::updateWeights(double sensor_range, double std_landmark[], 
                                    const vector<LandmarkObs> &observations, 
                                    const Map &map_landmarks) {
@@ -154,8 +189,99 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
    *   and the following is a good resource for the actual equation to implement
    *   (look at equation 3.33) http://planning.cs.uiuc.edu/node99.html
    */
+  double sum_weights = 0.0;
+  // For each particle  particles[i]
+   for (int i=0; i<num_particles; i++){
+       double final_weight = 1.0;
+      
+       for (unsigned int j=0; j< observations.size();j++){
+         // First transform the car measurements (observations) from local car measurement system to
+         // map coordinate system -> transformed observation
+         // with a HOMOGENEOUS TRANSFORMATION (rotation + translation) 
+         ground_truth p{particles[i].x, particles[i].y, particles[i].theta};
+         double m_x,m_y;
+
+         FromObservationToMap(p, observations[j].x, observations[j].y, m_x, m_y);
+          // We have the transformed observation in m_x and m_y
+         //TODO put these values somewhere 
+
+         //This is not possible
+         //observations[j].x = m_x;
+         //observations[j].y = m_y;
+         //observations[j].id = 0;
+
+      //Each measurement is associated with a landmark identifier (closest landmark to each
+      // transformed observation)
+      // perhaps this association is in  observations[j].id =  association (LandmarkObs->id)
+
+      // We have the transformed observation in m_x and m_y
+      // We have the landmark list in map_landmarks.landmark_list  (id_i, x_f, y_f)
+      // we do something like
+      // NOTE: Perhaps we could put here sensor_range to limit the number of landmarks we check!
+      // but that would need also the particle position!
+      //particles[i].x and particles[i].y
+      
+      // Here we are going to filter the landmarks by limiting them to sensor_range
+      vector<LandmarkObs> landmark_list;
+      for(unsigned int k=0; k< map_landmarks.landmark_list.size(); k++){
+         //Get id and x,y coordinates
+          float lm_x = map_landmarks.landmark_list[k].x_f;
+          float lm_y = map_landmarks.landmark_list[k].y_f;
+          int lm_id = map_landmarks.landmark_list[k].id_i;
+          if(fabs(lm_x - particles[i].x) <= sensor_range && 
+             fabs(lm_y - particles[i].y) <= sensor_range) {
+                landmark_list.push_back(LandmarkObs{ lm_id, lm_x, lm_y });
+             }
+        }
+       // Now we have the interesting landmarks in landmark_list
+      int closest_id= find_nearest(m_x, m_y, landmark_list); 
+      //observations[j].id = closest_id;   // I don't know how necessary this is
+
+
+
+
+       
+      //Calculate the weigth value of the particle particle[i].weight
+        double the_weight;
+        double mu_x,mu_y; //these are the actual location of the landmark for this observation
+        // so in this case we have found that for this observation the closest is closest_id
+        // so 
+        mu_x = map_landmarks.landmark_list[closest_id].x_f;
+        mu_y = map_landmarks.landmark_list[closest_id].y_f;
+
+        the_weight =  multiv_prob(std_landmark[0], std_landmark[1], m_x, m_y, mu_x, mu_y);
+
+        final_weight *= the_weight;
+       }  //each observation
+
+      particles[i].weight = final_weight;
+      sum_weights += final_weight;
+   }  // each particle
+
+// Do we have to normalize the weights by dividing them with sum_weights ??
+// I don't think this is necessary because in resample we are going to use discrete distribution
+// which uses weights without normalization
+
+//for (int i=0; i<num_particles; i++){
+//    particles[i].weight = particles[i].weight/sum_weights;
+//  }
 
 }
+
+int ParticleFilter::find_nearest(double obs_x, double obs_y, vector<LandmarkObs> &list){
+    int found_one=-1;
+    double distance= INT16_MAX;
+    // for all the landmarks we have to find the closest to obs_x and obs_y
+    for(unsigned int i=0; i<list.size();i++){
+      double d= dist(obs_x, obs_y, list[i].x, list[i].y);
+      if(d<distance){
+        distance = d;
+        found_one = i;
+      }
+    }
+
+  return found_one;
+} 
 
 void ParticleFilter::resample() {
   /**
@@ -164,6 +290,44 @@ void ParticleFilter::resample() {
    * NOTE: You may find std::discrete_distribution helpful here.
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
+  // First put all the weights in a vector
+  for (auto const & p: particles)
+    weights.push_back(p.weight);
+  
+  std::discrete_distribution<size_t> distr(weights.begin(), weights.end());
+  std::random_device rd;
+
+  // From here we are going to get the index for the particles
+  // as distr(rd)
+  // Now we have to think how to resample the particles
+
+  //std::random_device rd;
+  //std::mt19937 gen(rd());
+  for (size_t i = 0; i < 20; ++i)
+        std::cout << distr(rd) << " ";
+
+  std::vector<Particle> new_particles; 
+  for(int i=0;i<num_particles;i++){
+    int indice = distr(rd);
+    new_particles.push_back(particles[indice]);
+  }     
+
+  particles = new_particles;
+/*
+for(int i=0; i<num_particles;i++)
+  {
+    Particle element;
+    element.id =i;
+    element.x = dist_x(gen);
+    element.y = dist_y(gen);  //Here gaussian
+    element.theta = dist_thetha(gen);  //Here gaussian
+    element.weight = 1.0;
+
+    particles.push_back(element);
+  }
+*/
+
+
 
 }
 

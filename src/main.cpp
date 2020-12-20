@@ -101,7 +101,8 @@ int main() {
           std::istream_iterator<float>(),
           std::back_inserter(y_sense));
 
-          for (int i = 0; i < x_sense.size(); ++i) {
+         // for (int i = 0; i < x_sense.size(); ++i) {
+          for (uint  i = 0; i < x_sense.size(); ++i) {
             LandmarkObs obs;
             obs.x = x_sense[i];
             obs.y = y_sense[i];
@@ -135,6 +136,13 @@ int main() {
           msgJson["best_particle_x"] = best_particle.x;
           msgJson["best_particle_y"] = best_particle.y;
           msgJson["best_particle_theta"] = best_particle.theta;
+
+          // We don't take the error here?
+          // we have the best particle best_particle
+          // and we take the getError( gt_x, gt_y, gt_z, best_particle.x, best_particle.y, best_particle.theta);
+          // where gt is ??
+
+
 
           // Optional message data used for debugging particle's sensing 
           //   and associations
