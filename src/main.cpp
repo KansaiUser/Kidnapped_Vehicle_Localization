@@ -44,6 +44,7 @@ int main() {
     return -1;
   }
 
+  //map.show();
   // Create particle filter
   ParticleFilter pf;
 
@@ -70,6 +71,8 @@ int main() {
             double sense_y = std::stod(j[1]["sense_y"].get<string>());
             double sense_theta = std::stod(j[1]["sense_theta"].get<string>());
 
+            std::cout<<"The vehicle GPS indicates: "<<sense_x<<","<<sense_y<<","<<sense_theta<<std::endl;
+
             pf.init(sense_x, sense_y, sense_theta, sigma_pos);
           } else {
             // Predict the vehicle's next state from previous 
@@ -77,6 +80,7 @@ int main() {
             double previous_velocity = std::stod(j[1]["previous_velocity"].get<string>());
             double previous_yawrate = std::stod(j[1]["previous_yawrate"].get<string>());
 
+            std::cout<<"The vehicle moved: "<<previous_velocity<<" and "<<previous_yawrate<<std::endl;
             pf.prediction(delta_t, sigma_pos, previous_velocity, previous_yawrate);
           }
 

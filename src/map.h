@@ -9,6 +9,7 @@
 #define MAP_H_
 
 #include <vector>
+#include <iostream>
 
 class Map {
  public:  
@@ -19,6 +20,16 @@ class Map {
   };
 
   std::vector<single_landmark_s> landmark_list; // List of landmarks in the map
+
+  void show(){
+    for(auto const &l :landmark_list){
+      std::cout<<"["<<l.id_i<<")"<<l.x_f<<","<<l.y_f<<"]  "<<std::endl;
+    }
+  }
+
+  void show(int i) const{
+    std::cout<<"["<<landmark_list[i].id_i<<")"<<landmark_list[i].x_f<<","<<landmark_list[i].y_f<<"]  "<<std::endl;
+  }
 };
 
 #endif  // MAP_H_

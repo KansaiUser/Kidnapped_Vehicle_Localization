@@ -110,7 +110,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
     std::normal_distribution<double> dist_y(newy, std_y);
     std::normal_distribution<double> dist_thetha(newtheta, std_theta);
 
-    particles[i].x = dist_x(gen);
+    particles[i].x = dist_x(gen);   //Something is failing HERE
     particles[i].y = dist_y(gen);
     particles[i].theta = dist_thetha(gen);
 
@@ -193,8 +193,15 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
   // For each particle  particles[i]
    for (int i=0; i<num_particles; i++){
        double final_weight = 1.0;
+       if(i==0)
+          std::cout<<i<<">Debugging for Particle "<< particles[i].id<<
+           "("<<particles[i].x<<","<<particles[i].y<<","<<particles[i].theta<<")";
       
        for (unsigned int j=0; j< observations.size();j++){
+
+         //NOTE: Here id is not set in the observations!!!
+         if(i==0 && j<5)
+            std::cout<<j<<"> and observation "<< observations[j].id<<"["<<observations[j].x<<","<<observations[j].y<<"]";
          // First transform the car measurements (observations) from local car measurement system to
          // map coordinate system -> transformed observation
          // with a HOMOGENEOUS TRANSFORMATION (rotation + translation) 
@@ -202,6 +209,8 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
          double m_x,m_y;
 
          FromObservationToMap(p, observations[j].x, observations[j].y, m_x, m_y);
+         if(i==0 &&j<5)
+             std::cout<<j<<">  Transformed observation ["<<m_x<<","<<m_y<<"]"<<std::endl;
           // We have the transformed observation in m_x and m_y
          //TODO put these values somewhere 
 
@@ -231,13 +240,24 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
           if(fabs(lm_x - particles[i].x) <= sensor_range && 
              fabs(lm_y - particles[i].y) <= sensor_range) {
                 landmark_list.push_back(LandmarkObs{ lm_id, lm_x, lm_y });
+                if(i==0 &&j<5)
+                   std::cout<<lm_id<<",";
              }
         }
+      if(i==0&& j<5)  
+      std::cout<<"There are "<<landmark_list.size()<<" landmarks"<<std::endl;  
        // Now we have the interesting landmarks in landmark_list
       int closest_id= find_nearest(m_x, m_y, landmark_list); 
       //observations[j].id = closest_id;   // I don't know how necessary this is
-
-
+     //NOTE this is failing
+     if(i==0&&j<5){
+         std::cout<<"The nearest is #"<<closest_id<<" which is ";
+         }
+         closest_id--;  //THIS is very important. Unfortunately the ids don't follow the C++ rule for arrays
+                       // and start by 1. So to identify the correct in the map_landmarks list we need to substract one
+      if(i==0&&j<5){
+         map_landmarks.show(closest_id);
+         }
 
 
        
@@ -249,7 +269,11 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         mu_x = map_landmarks.landmark_list[closest_id].x_f;
         mu_y = map_landmarks.landmark_list[closest_id].y_f;
 
+        //std::cout<<"["<<std_landmark[0]<<"   "<<std_landmark[1]<<"]-["<<m_x<<","<<m_y<<"]["<<mu_x<<","<<mu_y<<"]"<<std::endl;
+
         the_weight =  multiv_prob(std_landmark[0], std_landmark[1], m_x, m_y, mu_x, mu_y);
+
+        //std::cout<<"theweight: "<<the_weight<<"  ";  // DEBUG Here it is giving 0 
 
         final_weight *= the_weight;
        }  //each observation
@@ -268,18 +292,36 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 
 }
 
+// NOTE  this function is failing
 int ParticleFilter::find_nearest(double obs_x, double obs_y, vector<LandmarkObs> &list){
+    static bool first=true;
     int found_one=-1;
     double distance= INT16_MAX;
+    if(first){
+      std::cout<<"found index: "<<found_one<<" with distance "<<distance<<std::endl;
+    }
+    if(first)
+       std::cout<<"list size: "<<list.size()<<std::endl;
     // for all the landmarks we have to find the closest to obs_x and obs_y
     for(unsigned int i=0; i<list.size();i++){
       double d= dist(obs_x, obs_y, list[i].x, list[i].y);
+      if(first){
+        std::cout<<"  distance: "<<d<<" for landmark "<<list[i].id;
+      }
       if(d<distance){
         distance = d;
-        found_one = i;
+        found_one =  list[i].id; // not i;
+        if(first){
+           std::cout<<"found index: "<<found_one<<" with distance "<<distance<<std::endl;
+          }
       }
     }
-
+  
+   if(first){
+      std::cout<<"found index: "<<found_one<<" with distance "<<distance<<std::endl;
+    }
+ 
+   first=false;
   return found_one;
 } 
 
@@ -290,13 +332,22 @@ void ParticleFilter::resample() {
    * NOTE: You may find std::discrete_distribution helpful here.
    *   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
    */
+  // Clean the vector
+  weights.clear();
   // First put all the weights in a vector
-  for (auto const & p: particles)
+  std::cout<<"Weights: ";
+  for (auto const & p: particles){
+    std::cout<<p.weight<<"  ";
     weights.push_back(p.weight);
-  
+  }
+  std::cout<<std::endl;
+
+  std::cout<<"Preparing distribution"<<std::endl;
+
   std::discrete_distribution<size_t> distr(weights.begin(), weights.end());
   std::random_device rd;
 
+  std::cout<<"distribution prepared"<<std::endl;
   // From here we are going to get the index for the particles
   // as distr(rd)
   // Now we have to think how to resample the particles
@@ -305,7 +356,7 @@ void ParticleFilter::resample() {
   //std::mt19937 gen(rd());
  // for (size_t i = 0; i < 20; ++i)
   //      std::cout << distr(rd) << " ";
-  std::cout<<"New Particles: ";
+  //std::cout<<"New Particles: ";
   std::vector<Particle> new_particles; 
   for(int i=0;i<num_particles;i++){
     int indice = distr(rd);
