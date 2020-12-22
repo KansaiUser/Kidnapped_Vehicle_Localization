@@ -76,6 +76,10 @@ inline double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs
   return weight;
 }
 
+inline bool myisnan(double x){
+  return x != x;
+}
+
 /**
  * Computes the error between ground truth and particle filter data.
  * @param (gt_x, gt_y, gt_theta) x, y and theta of ground truth

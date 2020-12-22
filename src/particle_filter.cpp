@@ -88,32 +88,55 @@ void ParticleFilter::prediction(double delta_t, double std_pos[],
   //however we don't have these standard deviations 
   //velocity =  
 
+  double posx,posy,postheta;
+  double newx,newy, newtheta;
+
   for (int i=0; i<num_particles; i++){
     //Calcualte prediction for particle particles[i]
     // we have previous velocity and previous yaw rate of the vehicle
     //also delta_t 
-    // particle position 
-    //particles[i].x;
-    //particles[i].y;
-    //particles[i].theta;
+    //Here apply the motion model, taking into account if yaw rate is 0
 
-    double newx = particles[i].x + (velocity/yaw_rate)*
+    if(yaw_rate!=0){
+    newx = particles[i].x + (velocity/yaw_rate)*
                                   (sin(particles[i].theta + yaw_rate* delta_t) - sin(particles[i].theta)); 
 
-    double newy = particles[i].y + (velocity/yaw_rate)*
+    newy = particles[i].y + (velocity/yaw_rate)*
                                   (cos(particles[i].theta) - cos(particles[i].theta + yaw_rate* delta_t)); 
 
-    double newtheta = particles[i].theta + yaw_rate * delta_t;
-
+    newtheta = particles[i].theta + yaw_rate * delta_t;
+    }
+    else{  //the yaw is zero
+ 
+    newx = particles[i].x + velocity*delta_t* cos(particles[i].theta);
+    newy = particles[i].y + velocity*delta_t* sin(particles[i].theta);
+    newtheta = particles[i].theta;
+    }
     // I should apply Gaussian noise here instead
     std::normal_distribution<double> dist_x(newx, std_x); 
     std::normal_distribution<double> dist_y(newy, std_y);
     std::normal_distribution<double> dist_thetha(newtheta, std_theta);
 
-    particles[i].x = dist_x(gen);   //Something is failing HERE
-    particles[i].y = dist_y(gen);
-    particles[i].theta = dist_thetha(gen);
+    posx = dist_x(gen);   //Something is failing HERE
+    posy = dist_y(gen);
+    postheta = dist_thetha(gen);
 
+    if( myisnan(newx)|| myisnan(newy)|| myisnan(newtheta)||
+        myisnan(posx)||myisnan(posy)||myisnan(postheta)){
+        std::cout<<"delta_t "<<delta_t;
+        std::cout<<" std "<<std_x<<" "<<std_y<<" "<<std_theta;
+        std::cout<<" velocity "<<velocity<<" yaw rate "<<yaw_rate;
+        std::cout<<" previous particle "<<i<<" is";
+        std::cout<<" ID "<<particles[i].id<<" x"<<particles[i].x<<" y"<<particles[i].y<<
+        "theta "<<particles[i].theta<<" weight "<<particles[i].weight<<std::endl;
+
+        std::cout<<"newx "<<newx<<" newy "<<newy<<" newtheta"<<newtheta;
+        std::cout<<" postx"<< posx<<" posty "<<posy<<" posttheta "<<postheta<<std::endl;
+
+        }
+    particles[i].x = posx;   //Something is failing HERE
+    particles[i].y = posy;
+    particles[i].theta = postheta;
 //    particles[i].x = newx;
 //    particles[i].y = newy;
 //    particles[i].theta = newtheta;
@@ -342,12 +365,12 @@ void ParticleFilter::resample() {
   }
   std::cout<<std::endl;
 
-  std::cout<<"Preparing distribution"<<std::endl;
+  //std::cout<<"Preparing distribution"<<std::endl;
 
   std::discrete_distribution<size_t> distr(weights.begin(), weights.end());
   std::random_device rd;
 
-  std::cout<<"distribution prepared"<<std::endl;
+  //std::cout<<"distribution prepared"<<std::endl;
   // From here we are going to get the index for the particles
   // as distr(rd)
   // Now we have to think how to resample the particles
@@ -356,7 +379,7 @@ void ParticleFilter::resample() {
   //std::mt19937 gen(rd());
  // for (size_t i = 0; i < 20; ++i)
   //      std::cout << distr(rd) << " ";
-  //std::cout<<"New Particles: ";
+  std::cout<<"New Particles: ";
   std::vector<Particle> new_particles; 
   for(int i=0;i<num_particles;i++){
     int indice = distr(rd);
