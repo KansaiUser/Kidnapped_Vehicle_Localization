@@ -75,7 +75,7 @@ inline double multiv_prob(double sig_x, double sig_y, double x_obs, double y_obs
     
   return weight;
 }
-
+// To check if a value is nan
 inline bool myisnan(double x){
   return x != x;
 }

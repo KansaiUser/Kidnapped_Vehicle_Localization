@@ -141,10 +141,7 @@ int main() {
           msgJson["best_particle_y"] = best_particle.y;
           msgJson["best_particle_theta"] = best_particle.theta;
 
-          // We don't take the error here?
-          // we have the best particle best_particle
-          // and we take the getError( gt_x, gt_y, gt_z, best_particle.x, best_particle.y, best_particle.theta);
-          // where gt is ??
+          
 
 
 
@@ -155,7 +152,7 @@ int main() {
           msgJson["best_particle_sense_y"] = pf.getSenseCoord(best_particle, "Y");
 
           auto msg = "42[\"best_particle\"," + msgJson.dump() + "]";
-          // std::cout << msg << std::endl;
+          
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
